@@ -67,7 +67,7 @@ so there is no drift and no floating point.
 
 | Name | Role | Contact |
 | --- | --- | --- |
-| Deyanju23 | Maintainer | GitHub [@Deyanju23](https://github.com/Deyanju23) · Telegram `@your-telegram` |
+| Deyanju23 | Maintainer | GitHub [@Deyanju23](https://github.com/Deyanju23) · |
 
 ## Community
 
