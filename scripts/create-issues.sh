@@ -47,7 +47,16 @@ create_issue() {
     skipped=$((skipped + 1))
     return
   fi
-  gh issue create --repo "$REPO" --title "$title" --labels "$labels" --body "$body" >/dev/null
+  # `gh issue create` takes one repeated -l per label, so split the
+  # comma-separated list into individual flags.
+  local label_args=()
+  local part
+  IFS=',' read -ra parts <<< "$labels"
+  for part in "${parts[@]}"; do
+    label_args+=(-l "$part")
+  done
+
+  gh issue create --repo "$REPO" --title "$title" "${label_args[@]}" --body "$body" >/dev/null
   echo "create : $title"
   created=$((created + 1))
 }
