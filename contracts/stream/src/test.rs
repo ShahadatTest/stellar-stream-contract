@@ -48,6 +48,19 @@ fn test_init_succeeds() {
 }
 
 #[test]
+fn test_init_requires_admin_auth() {
+    let env = Env::default();
+    // Deliberately no mock_all_auths(): init must be rejected without the
+    // admin's authorization.
+    let admin = Address::generate(&env);
+    let contract_id = env.register(StreamContract, ());
+    let client = StreamContractClient::new(&env, &contract_id);
+
+    let result = client.try_init(&admin);
+    assert!(result.is_err(), "init must require the admin's auth");
+}
+
+#[test]
 fn test_init_double_initialization_fails() {
     let env = Env::default();
     env.mock_all_auths();

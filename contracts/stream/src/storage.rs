@@ -6,21 +6,30 @@ use crate::types::{DataKey, Stream};
 const PERSISTENT_TTL_THRESHOLD: u32 = 17_280;
 const PERSISTENT_TTL_EXTEND: u32 = 518_400;
 
+// Instance entries share the contract instance's TTL and are not extended
+// automatically, so every instance write must bump them explicitly. When the
+// instance TTL reaches zero the contract is archived and unusable until
+// restored.
+const INSTANCE_TTL_THRESHOLD: u32 = 17_280;
+const INSTANCE_TTL_EXTEND: u32 = 518_400;
+
+/// Extends the TTL of the contract instance and all instance entries
+/// (`Admin`, `NextStreamId`).
+pub fn extend_instance_ttl(env: &Env) {
+    env.storage()
+        .instance()
+        .extend_ttl(INSTANCE_TTL_THRESHOLD, INSTANCE_TTL_EXTEND);
+}
+
 // --- Admin Storage ---
 
 pub fn has_admin(env: &Env) -> bool {
     env.storage().instance().has(&DataKey::Admin)
 }
 
-pub fn get_admin(env: &Env) -> Result<Address, StreamError> {
-    env.storage()
-        .instance()
-        .get(&DataKey::Admin)
-        .ok_or(StreamError::NotInitialized)
-}
-
 pub fn set_admin(env: &Env, admin: &Address) {
     env.storage().instance().set(&DataKey::Admin, admin);
+    extend_instance_ttl(env);
 }
 
 // --- NextStreamId Storage ---
@@ -34,6 +43,7 @@ pub fn get_next_stream_id(env: &Env) -> u64 {
 
 pub fn set_next_stream_id(env: &Env, id: u64) {
     env.storage().instance().set(&DataKey::NextStreamId, &id);
+    extend_instance_ttl(env);
 }
 
 // --- Stream Storage ---
