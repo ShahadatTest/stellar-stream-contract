@@ -38,6 +38,7 @@ extended on every access.
 | `deposit_amount` | `i128` | Total locked at creation, in base units |
 | `start_time` | `u64` | Unix seconds when accrual begins |
 | `stop_time` | `u64` | Unix seconds when accrual completes |
+| `rate_per_second` | `i128` | `deposit_amount / duration`, integer division (informational) |
 | `remaining_balance` | `i128` | Tokens still held by the contract for this stream |
 | `recipient_withdrawn` | `i128` | Cumulative amount withdrawn by the recipient |
 | `is_canceled` | `bool` | Set once cancellation completes |
@@ -178,9 +179,11 @@ create_stream(
 ## 6. Hardening backlog
 
 These are known gaps. Each becomes an issue (see `scripts/create-issues.sh`).
-The following were found and fixed in the initial hardening pass:
-instance-storage TTL (was H1), unauthenticated `init` (was H2), and dead code
-`require_admin` / `rate_per_second` (was H3).
+Fixed in the initial hardening pass: instance-storage TTL (was H1) and
+unauthenticated `init` (was H2). The unused `admin::require_admin` was deleted.
+`Stream.rate_per_second` is **retained**: the contract does not read it, but it
+is part of the public `get_stream` ABI consumed by the application SDK, so
+removing it is a breaking change across repos and must be coordinated.
 
 ### H1 — Auth-failure tests missing (MEDIUM)
 

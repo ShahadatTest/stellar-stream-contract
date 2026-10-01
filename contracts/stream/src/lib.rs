@@ -75,6 +75,16 @@ impl StreamContract {
             return Err(StreamError::InvalidTimeRange);
         }
 
+        // Informational rate for clients. The remainder from integer division
+        // does not affect distribution, which uses the exact earned formula
+        // (deposit_amount * elapsed / duration).
+        let duration_i128 = stop_time
+            .checked_sub(start_time)
+            .ok_or(StreamError::MathOverflow)? as i128;
+        let rate_per_second = deposit_amount
+            .checked_div(duration_i128)
+            .ok_or(StreamError::MathOverflow)?;
+
         // Transfer tokens from sender to contract
         let token_client = token::Client::new(&env, &token_addr);
         token_client.transfer(&sender, env.current_contract_address(), &deposit_amount);
@@ -91,6 +101,7 @@ impl StreamContract {
             deposit_amount,
             start_time,
             stop_time,
+            rate_per_second,
             remaining_balance: deposit_amount,
             recipient_withdrawn: 0,
             is_canceled: false,
