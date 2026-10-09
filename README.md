@@ -10,7 +10,7 @@ Lock funds once. They unlock to the recipient every second until the stream ends
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Rust](https://img.shields.io/badge/rust-stable-orange.svg)](https://www.rust-lang.org/)
 [![soroban-sdk](https://img.shields.io/badge/soroban--sdk-28.x-blue.svg)](https://crates.io/crates/soroban-sdk)
-[![Stellar Wave](https://img.shields.io/badge/Stellar-Wave-7B3FE4.svg)](https://www.drips.network/wave/stellar)
+[![Stellar](https://img.shields.io/badge/Stellar-7B3FE4.svg)](https://www.drips.network/wave/stellar)
 
 </div>
 
@@ -110,7 +110,7 @@ Full parameters, return types, auth, and events: `docs/CONTRACT_SPEC.md`.
 
 ## Contributing
 
-Read `CONTRIBUTING.md`. Issues labelled `good first issue` and `Stellar Wave`
+Read `CONTRIBUTING.md`. Issues labelled `good first issue`
 are the best entry points. One logical change per pull request, Conventional
 Commits, green CI, one maintainer review.
 
