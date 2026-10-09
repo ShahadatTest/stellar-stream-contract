@@ -108,6 +108,15 @@ interface.
 
 Full parameters, return types, auth, and events: `docs/CONTRACT_SPEC.md`.
 
+## Deployments
+
+| Network | Contract ID | Deployed from |
+| --- | --- | --- |
+| Testnet | [`CAAY2Y777DRUSYKEPKGNX5GI5UYTABBSKIL4NVULGJMURC436MUGLWGE`](https://stellar.expert/explorer/testnet/contract/CAAY2Y777DRUSYKEPKGNX5GI5UYTABBSKIL4NVULGJMURC436MUGLWGE) | `v0.1.0` |
+
+The testnet deployment is initialized with admin
+`GCTXUGIIYDJVA7RJH3TULIQHFZGZDVJRSE6QEWDEPIFP27WHIKKQ66O6`.
+
 ## Contributing
 
 Read `CONTRIBUTING.md`. Issues labelled `good first issue`
