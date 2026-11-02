@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roadmap — Soroban Sentinel</title>
+<meta name="description" content="What shipped, what is next, and what Soroban Sentinel deliberately will not do.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="dot"></span> Soroban Sentinel</a>
+    <nav class="site">
+      <a href="./">Overview</a>
+      <a href="cli.html">CLI</a>
+      <a href="contract.html">Contract</a>
+      <a href="deployments.html">Deployments</a>
+      <a href="roadmap.html" aria-current="page">Roadmap</a>
+      <a href="https://github.com/Streams-Hq/soroban-sentinel">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Roadmap</h1>
+  <p class="lead">Sequenced by what unlocks the most value per unit of work. Every open item maps to a funded Wave issue.</p>
+
+  <h2>v0.1 — shipped</h2>
+  <ul>
+    <li>Registry contract: permissionless watchlist, owner-only removal, monotonic ids, pagination, self-extending TTLs</li>
+    <li>TTL → wall-clock forecasting against Stellar's 5 second close time</li>
+    <li>Risk classification with a per-contract warn window</li>
+    <li><code>scan</code>, <code>verify</code>, <code>registry</code>, <code>doctor</code></li>
+    <li>Instance-key derivation for any contract id, with no cooperation from its authors</li>
+    <li>Testnet deployment, seeded watchlist, daily CI scan, this site</li>
+  </ul>
+
+  <h2>v0.2 — close the loop</h2>
+  <ul>
+    <li><strong><code>sentinel restore</code></strong> — build and submit <code>RestoreFootprint</code> from the simulation preamble, dry-run by default</li>
+    <li><strong><code>sentinel extend</code></strong> — call a contract's own extension hook with a ledger budget</li>
+    <li><strong>maxEntryTtl-aware risk</strong> — never label a contract urgent when it is already at the network ceiling</li>
+    <li><strong>Multi-RPC consensus</strong> — two endpoints, one disagreement report, so a lying RPC cannot hide a dead contract</li>
+  </ul>
+
+  <h2>v0.3 — make the watchlist trustworthy</h2>
+  <ul>
+    <li><strong>Footprint indexer</strong> — derive persistent keys from <code>WatchAdded</code>/<code>WatchRemoved</code> plus RPC events</li>
+    <li><strong>Bounty accounting</strong> — reimburse whoever pays to restore, once "this keeper really restored it" is verifiable</li>
+    <li><strong>Ownership transfer</strong> — move a watch without allocating a new id</li>
+  </ul>
+
+  <h2>v0.4 — make it visible</h2>
+  <ul>
+    <li>Static status dashboard generated from <code>scan --json</code></li>
+    <li>Webhook alerts on state transitions, deduplicated</li>
+    <li>Prometheus exporter</li>
+  </ul>
+
+  <h2>Non-goals</h2>
+  <ul>
+    <li>Extending a foreign contract's TTL from a shared contract — the protocol forbids it</li>
+    <li>Holding user funds</li>
+    <li>Generic multi-chain uptime monitoring — the forecast only means something because Soroban has a protocol-defined expiry</li>
+  </ul>
+
+  <div class="cta">
+    <a class="primary" href="https://github.com/Streams-Hq/soroban-sentinel/issues">Pick up an issue</a>
+    <a href="https://www.drips.network/wave/stellar">Drips Wave</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">MIT licensed · <a href="https://github.com/Streams-Hq/soroban-sentinel">source</a></div>
+</footer>
+</body>
+</html>

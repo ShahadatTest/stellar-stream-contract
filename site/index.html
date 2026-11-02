@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soroban Sentinel — know before your contract's state expires</title>
+<meta name="description" content="Monitor and forecast Soroban state-archival deadlines. A public watchlist contract plus a keeper CLI for Stellar developers.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="dot"></span> Soroban Sentinel</a>
+    <nav class="site">
+      <a href="./" aria-current="page">Overview</a>
+      <a href="cli.html">CLI</a>
+      <a href="contract.html">Contract</a>
+      <a href="deployments.html">Deployments</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="https://github.com/Streams-Hq/soroban-sentinel">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Know before your Soroban contract goes dark.</h1>
+  <p class="lead">
+    Soroban storage expires. When a contract's instance entry is archived it
+    stops accepting calls, and the funds inside it are frozen until somebody
+    pays to restore the footprint. Sentinel watches that deadline and tells you
+    weeks ahead.
+  </p>
+
+  <div class="cta">
+    <a class="primary" href="cli.html">Read the CLI docs</a>
+    <a href="https://stellar.expert/explorer/testnet/contract/CC4TQFW5GLQTOKWTDE7IJWPQFWJ4NWVMJGBFWB76PUP3T7CEOVVSQW6O">View the registry on testnet</a>
+  </div>
+
+  <h2>A failure mode unique to Soroban</h2>
+  <p>
+    Entries on most chains live forever, so nobody needs this tool. On Stellar,
+    every ledger entry carries a <code>liveUntilLedgerSeq</code>. A quiet month
+    is enough to archive a contract's instance, and there is no event, no warning
+    and no read that says "you have six days left" unless something asks.
+  </p>
+  <p>
+    Restoration is permissionless, so the fix is cheap. The hard part is knowing
+    that it is needed — which is exactly what Sentinel does.
+  </p>
+
+  <h2>What it is</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Registry contract</h3>
+      <p>A public watchlist on Soroban. Anyone can register a contract; only its owner can remove it. No admin, no fees, no funds to steal.</p>
+    </div>
+    <div class="card">
+      <h3>Keeper CLI</h3>
+      <p>Reads <code>liveUntilLedgerSeq</code> for every watched contract, converts ledgers to a wall-clock deadline, and classifies the risk.</p>
+    </div>
+    <div class="card">
+      <h3>CI gate</h3>
+      <p><code>sentinel verify</code> exits <code>2</code> when a contract is critical or archived, so a daily job becomes a deadline reminder.</p>
+    </div>
+  </div>
+
+  <h2>Live output</h2>
+<pre><code>$ sentinel scan
+
+Soroban Sentinel · testnet · ledger 5515284
+
+STATE     LABEL                         CONTRACT      EXPIRES IN  ESTIMATED EXPIRY  LEDGERS
+-------------------------------------------------------------------------------------------
+URGENT    Sentinel registry (self)      CC4TQFW5GLQT      6d 23h  2026-11-09 06:13  120952
+OK        Native XLM Stellar Asset Con  CDLZFC3SYJYD    170d 21h  2027-04-22 03:50  2953151
+
+1 healthy · 0 watch · 1 urgent · 0 critical · 0 archived</code></pre>
+
+  <h2>Risk states</h2>
+  <div class="risk-legend">
+    <span class="risk ok">OK</span>
+    <span class="risk watch">WATCH</span>
+    <span class="risk urgent">URGENT</span>
+    <span class="risk critical">CRITICAL</span>
+    <span class="risk archived">ARCHIVED</span>
+  </div>
+  <table>
+    <tr><th>State</th><th>Meaning</th></tr>
+    <tr><td>OK</td><td>More than a warn window of ledgers remaining</td></tr>
+    <tr><td>WATCH</td><td>Inside the warn window — schedule an extension</td></tr>
+    <tr><td>URGENT</td><td>A third of the window left</td></tr>
+    <tr><td>CRITICAL</td><td>A tenth of the window left — act now</td></tr>
+    <tr><td>ARCHIVED</td><td>Not live on this network: archived, or never deployed</td></tr>
+  </table>
+  <p class="note">
+    Readings are capped by the network's <code>maxEntryTtl</code> (~7 days on
+    testnet). That is why a freshly written contract can still read
+    <code>URGENT</code> against a 30-day window: it is the cap, not a problem.
+  </p>
+
+  <h2>Quick start</h2>
+<pre><code>git clone https://github.com/Streams-Hq/soroban-sentinel.git
+cd soroban-sentinel
+npm install
+
+# any contract, no configuration
+node packages/cli/src/index.ts scan --contract CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+
+# the on-chain watchlist
+node packages/cli/src/index.ts registry list</code></pre>
+
+  <h2>Design promises</h2>
+  <ul>
+    <li><strong>Fundless contract.</strong> The registry never touches a token, so there is nothing to drain.</li>
+    <li><strong>No admin.</strong> No upgrade authority, no pause switch, no privileged address.</li>
+    <li><strong>No cooperation needed.</strong> The instance key is derivable from the contract id, so any contract can be watched.</li>
+    <li><strong>Honest forecasts.</strong> 5 second ledger target, labelled as an estimate, and never optimistic about a lapsed entry.</li>
+  </ul>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    Built for the Stellar ecosystem · <a href="https://github.com/Streams-Hq/soroban-sentinel">source</a> ·
+    <a href="https://github.com/Streams-Hq/soroban-sentinel/blob/main/SECURITY.md">security</a> ·
+    MIT licensed
+  </div>
+</footer>
+</body>
+</html>

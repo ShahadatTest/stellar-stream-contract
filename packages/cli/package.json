@@ -1,0 +1,10 @@
+{
+  "name": "@soroban-sentinel/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Keeper CLI for Soroban state-archival deadlines",
+  "bin": {
+    "sentinel": "./src/index.ts"
+  }
+}

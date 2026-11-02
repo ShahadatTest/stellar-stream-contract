@@ -1,0 +1,28 @@
+{
+  "name": "soroban-sentinel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Track and forecast Soroban state-archival deadlines before contracts go dark",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "bin": {
+    "sentinel": "./packages/cli/src/index.ts"
+  },
+  "scripts": {
+    "sentinel": "node packages/cli/src/index.ts",
+    "scan": "node packages/cli/src/index.ts scan",
+    "test": "node --test packages/sdk/test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "deploy": "node scripts/deploy.ts"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^17.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}

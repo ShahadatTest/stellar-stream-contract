@@ -1,3 +1,20 @@
-/target
-**/target
-contracts/stream/test_snapshots/
+# Rust
+target/
+**/*.rs.bk
+test_snapshots/
+
+# Node
+node_modules/
+npm-debug.log*
+scan.json
+
+# Local secrets and overrides
+.env
+.env.*
+!.env.example
+deployments.local.json
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/

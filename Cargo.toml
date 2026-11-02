@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "contracts/stream",
+    "contracts/registry",
 ]
 
 [profile.release]

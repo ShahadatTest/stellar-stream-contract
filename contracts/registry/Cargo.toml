@@ -1,8 +1,9 @@
 [package]
-name = "stellar-stream"
+name = "sentinel-registry"
 version = "0.1.0"
 edition = "2021"
 publish = false
+description = "Public watchlist of Soroban contracts whose state-archival deadline should be tracked"
 
 [lib]
 crate-type = ["cdylib"]

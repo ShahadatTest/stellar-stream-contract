@@ -1,207 +1,152 @@
-# StellarStream — Contract Specification
+# Contract specification — `sentinel-registry`
 
-This document is the source of truth for the `stream` contract. If code and
-spec disagree, the spec wins until it is deliberately changed. Any change to
-behavior must update this file in the same pull request.
+Source of truth for `contracts/registry`. If code and spec disagree, the spec
+wins until it is deliberately changed; behaviour changes must update this file
+in the same pull request.
 
-- Contract crate: `contracts/stream` (`stellar-stream`)
-- Language: Rust, edition 2021
-- SDK: `soroban-sdk` 28.x, target `wasm32v1-none`
-- Number of contracts: **one**. It has a single responsibility: custody and
-  linear accrual of a timed token deposit.
+- Crate: `sentinel-registry` (`contracts/registry`)
+- Language: Rust 2021, `soroban-sdk` 28.x, target `wasm32v1-none`
+- Contracts: **one**. It stores a watchlist and nothing else.
+- Holds no funds. Has no admin. Is not upgradeable.
 
 ---
 
-## 1. Data model
+## 1. Storage
 
-### `DataKey` (`types.rs`)
+### `DataKey`
 
-| Variant | Storage class | Meaning |
+| Variant | Class | Value |
 | --- | --- | --- |
-| `Admin` | instance | The address set at initialization |
-| `NextStreamId` | instance | Monotonic counter for stream ids |
-| `Stream(u64)` | persistent | One `Stream` struct per id |
+| `NextId` | instance | `u64`, next watch id (also the count of watches ever created) |
+| `ActiveCount` | instance | `u64`, number of active watches |
+| `Target(u64)` | persistent | `Address` of the watched contract, indexed by id |
+| `IdOf(Address)` | persistent | `u64` id of the watch for that contract |
+| `Watch(Address)` | persistent | the `Watch` record |
 
-Instance entries share one TTL — the contract instance's TTL — which is **not**
-extended automatically. Every instance write calls
-`extend_instance_ttl()`. Persistent entries carry their own TTL and are
-extended on every access.
-
-### `Stream`
+### `Watch`
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `id` | `u64` | Stream identifier, assigned sequentially from 0 |
-| `sender` | `Address` | Funded the stream; may cancel if allowed |
-| `recipient` | `Address` | Accrues and withdraws |
-| `token` | `Address` | Token contract address (SAC or Soroban token) |
-| `deposit_amount` | `i128` | Total locked at creation, in base units |
-| `start_time` | `u64` | Unix seconds when accrual begins |
-| `stop_time` | `u64` | Unix seconds when accrual completes |
-| `rate_per_second` | `i128` | `deposit_amount / duration`, integer division (informational) |
-| `remaining_balance` | `i128` | Tokens still held by the contract for this stream |
-| `recipient_withdrawn` | `i128` | Cumulative amount withdrawn by the recipient |
-| `is_canceled` | `bool` | Set once cancellation completes |
-| `cancelable` | `bool` | Whether the sender may cancel before `stop_time` |
+| `id` | `u64` | Monotonic id, never reused |
+| `target` | `Address` | The watched contract |
+| `owner` | `Address` | Registered the watch; the only account that may remove it |
+| `label` | `String` | Human-readable name for dashboards |
+| `warn_ledgers` | `u32` | Warn when fewer than this many ledgers remain |
+| `added_ledger` | `u32` | Ledger sequence at registration |
+| `active` | `bool` | False after removal; the record is retained |
 
-**Accrual rule.** For `current_time = env.ledger().timestamp()`:
+### TTL policy
 
-```
-elapsed = clamp(current_time - start_time, 0, duration)
-earned  = deposit_amount * elapsed / duration        // i128, integer division
-```
+Every write extends the registry's instance TTL and the TTLs of all three
+persistent entries it touches; every read extends the instance TTL and the TTL
+of the record it reads.
 
-`earned` is monotonic in time and reaches `deposit_amount` exactly at
-`stop_time`. There is no floating point anywhere.
+- Threshold: 17,280 ledgers (~1 day)
+- Extension: 518,400 ledgers (~30 days), clamped by the network's `maxEntryTtl`
+
+Guard rails:
+
+| Constant | Value | Purpose |
+| --- | --- | --- |
+| `MIN_WARN_LEDGERS` | 17,280 | A warn window under a day is useless |
+| `MAX_WARN_LEDGERS` | 6,307,200 | One year: larger is certainly a unit mistake |
+| `MAX_PAGE` | 50 | Upper bound on `list` result size |
 
 ---
 
-## 2. Errors (`error.rs`)
+## 2. Errors
 
 | Code | Variant | Raised when |
 | --- | --- | --- |
-| 1 | `NotInitialized` | Admin read before `init` |
-| 2 | `AlreadyInitialized` | `init` called twice |
-| 3 | `Unauthorized` | Caller is neither recipient nor sender where one is required |
-| 4 | `StreamNotFound` | No `Stream` under the given id |
-| 5 | `StreamEnded` | Reserved |
-| 6 | `StreamCanceled` | Operation on an already-cancelled stream |
-| 7 | `InvalidTimeRange` | `start_time >= stop_time` |
-| 8 | `ZeroDeposit` | `deposit_amount <= 0` |
-| 9 | `AmountMismatch` | Reserved |
-| 10 | `WithdrawAmountTooHigh` | `amount > available` |
-| 11 | `NotCancelable` | `cancel` on a stream with `cancelable = false` |
-| 12 | `MathOverflow` | Any checked arithmetic overflows |
+| 1 | `Unauthorized` | Caller is not the watch owner |
+| 2 | `AlreadyWatched` | Target already has an active watch |
+| 3 | `NotFound` | No watch record for the target |
+| 4 | `NotWatched` | Removing a watch that is already inactive |
+| 5 | `InvalidWarnWindow` | `warn_ledgers` outside `[MIN_WARN_LEDGERS, MAX_WARN_LEDGERS]` |
+| 6 | `MathOverflow` | Checked arithmetic overflowed |
 
-Codes are stable and part of the ABI. Do not renumber. Removing a variant is a
-breaking change.
+Codes are part of the ABI. Never renumber; removing a variant is breaking.
 
 ---
 
-## 3. Events (`events.rs`)
+## 3. Events
 
-All emitted via `#[contractevent]`.
+All emitted through `#[contractevent]`. Exactly one event per state change.
 
 | Event | Fields | Emitted by |
 | --- | --- | --- |
-| `StreamCreated` | `sender, recipient, stream_id, token, deposit_amount, start_time, stop_time` | `create_stream` |
-| `TokensWithdrawn` | `recipient, stream_id, amount, remaining_balance` | `withdraw` |
-| `StreamCanceled` | `stream_id, sender_refund, recipient_payout` | `cancel` |
+| `WatchAdded` | `id, target, owner, warn_ledgers` | `watch` |
+| `WatchRemoved` | `target, owner` | `unwatch` |
 
-Every state-changing function emits exactly one event.
+Indexers can reconstruct the full current watchlist from `WatchAdded` and
+`WatchRemoved` alone, which is the intended path for a footprint indexer.
 
 ---
 
 ## 4. Functions
 
-### `init(admin: Address) -> Result<(), StreamError>`
+### `watch(owner, target, label, warn_ledgers) -> Result<u64, SentinelError>`
 
-- **Auth:** `admin.require_auth()`. The admin must authorize its own
-  appointment.
-- **Effect:** stores `Admin`, sets `NextStreamId = 0`. Fails with
-  `AlreadyInitialized` if `Admin` already set.
-- **Events:** none.
-- **Called once** after deployment.
+- **Auth:** `owner.require_auth()`.
+- **Validation:** `warn_ledgers` within bounds (else `InvalidWarnWindow`); no
+  active watch on `target` (else `AlreadyWatched`).
+- **Effects:** allocates the next id, writes `Watch`, `Target(id)`, `IdOf`,
+  increments `NextId` and `ActiveCount`, extends TTLs.
+- **Events:** `WatchAdded`.
+- **Notes:** re-registering a removed contract allocates a **new** id.
 
-### `create_stream(...) -> Result<u64, StreamError>`
+### `unwatch(owner, target) -> Result<(), SentinelError>`
 
-```
-create_stream(
-  sender: Address,
-  recipient: Address,
-  token_addr: Address,
-  deposit_amount: i128,
-  start_time: u64,
-  stop_time: u64,
-  cancelable: bool,
-) -> u64
-```
+- **Auth:** `owner.require_auth()`.
+- **Validation:** record exists (else `NotFound`); caller is the owner (else
+  `Unauthorized`); the watch is active (else `NotWatched`).
+- **Effects:** sets `active = false`, decrements `ActiveCount`, keeps the record.
+- **Events:** `WatchRemoved`.
 
-- **Auth:** `sender.require_auth()`.
-- **Validation:** `deposit_amount > 0`, else `ZeroDeposit`;
-  `start_time < stop_time`, else `InvalidTimeRange`.
-- **Effects:** transfers `deposit_amount` from `sender` to the contract,
-  assigns the next id, stores the `Stream`, increments `NextStreamId`.
-  Returns the new id.
-- **Events:** `StreamCreated`.
-- **Notes:** `start_time` may be in the past (retroactive vesting is allowed).
+### `get(target) -> Result<Watch, SentinelError>`
 
-### `balance_of(stream_id: u64, target: Address) -> Result<i128, StreamError>`
+- **Auth:** none. **Returns** the record, active or not. `NotFound` if absent.
+- **Side effect:** extends TTLs.
 
-- **Auth:** none. Read-only; any address may query.
-- **Returns:** for `recipient`: `earned - recipient_withdrawn`; for `sender`:
-  `deposit_amount - earned`. Any other address → `Unauthorized`.
-- **Failure:** `StreamNotFound`; `StreamCanceled` if the stream was cancelled.
-- **Side effect:** extends the persistent TTL of the stream entry.
+### `is_watched(target) -> bool`
 
-### `get_stream(stream_id: u64) -> Result<Stream, StreamError>`
+- **Auth:** none. True only for an **active** watch.
+
+### `list(cursor, limit) -> Vec<Watch>`
 
 - **Auth:** none.
-- **Returns:** the full `Stream`. Extends the persistent TTL.
+- **Behaviour:** iterates ids from `cursor` upward, skipping inactive records,
+  until `limit` results are collected or ids are exhausted. `limit == 0` or
+  `limit > MAX_PAGE` is clamped to `MAX_PAGE`.
+- **Notes:** because removed ids are skipped, a page may return fewer than
+  `limit` entries while later entries still exist. Callers page by advancing
+  `cursor` to `last id + 1`.
 
-### `withdraw(stream_id: u64, amount: i128) -> Result<(), StreamError>`
+### `count() -> u64`
 
-- **Auth:** `recipient.require_auth()`.
-- **Validation:** `amount <= earned - recipient_withdrawn`, else
-  `WithdrawAmountTooHigh`; `StreamCanceled` if already cancelled;
-  `StreamNotFound` if missing.
-- **Effects:** increments `recipient_withdrawn`, decrements
-  `remaining_balance`, transfers `amount` from the contract to the recipient.
-  State is written before the token transfer (checks-effects-interactions).
-- **Events:** `TokensWithdrawn`.
+- **Auth:** none. Number of watches ever created (the next id).
 
-### `cancel(stream_id: u64) -> Result<(), StreamError>`
+### `active_count() -> u64`
 
-- **Auth:** `sender.require_auth()`.
-- **Validation:** `cancelable` must be true, else `NotCancelable`;
-  not already cancelled, else `StreamCanceled`.
-- **Effects:** computes `earned`; pays the recipient
-  `earned - recipient_withdrawn` and refunds the sender
-  `deposit_amount - earned`; sets `is_canceled = true` and
-  `remaining_balance = 0`.
-- **Events:** `StreamCanceled`.
+- **Auth:** none. Number of active watches.
 
 ---
 
 ## 5. Invariants
 
-1. `contract token balance >= Σ remaining_balance` over all live streams.
-2. For any live stream and any timestamp:
-   `balance_of(recipient) + balance_of(sender) == deposit_amount`.
-3. `earned` is non-decreasing in time and equals `deposit_amount` at
-   `stop_time` and after.
-4. `recipient_withdrawn` never exceeds `earned`.
-5. After `cancel` or a full withdrawal, the contract holds 0 tokens for that
-   stream.
+1. `active_count == |{w : Watch(w).active}|`.
+2. `count == NextId`, and every id in `[0, NextId)` maps to at most one
+   `Target(id)`.
+3. `Watch(t).id == IdOf(t)` for every existing record.
+4. No function can transfer tokens, change another contract's storage, or change
+   the contract's own executable.
+5. `unwatch` never deletes storage; ids stay resolvable forever.
 
 ---
 
-## 6. Hardening backlog
+## 6. Out of scope, by design
 
-These are known gaps. Each becomes an issue (see `scripts/create-issues.sh`).
-Fixed in the initial hardening pass: instance-storage TTL (was H1) and
-unauthenticated `init` (was H2). The unused `admin::require_admin` was deleted.
-`Stream.rate_per_second` is **retained**: the contract does not read it, but it
-is part of the public `get_stream` ABI consumed by the application SDK, so
-removing it is a breaking change across repos and must be coordinated.
-
-### H1 — Auth-failure tests missing (MEDIUM)
-
-Most tests call `env.mock_all_auths()`. `init` now has a rejection test, but no
-test proves that a non-recipient cannot `withdraw` or a non-sender cannot
-`cancel`. Add rejection tests.
-
-### H2 — Events are never asserted (LOW)
-
-Add tests that check `StreamCreated`, `TokensWithdrawn`, and `StreamCanceled`
-are published with the expected payload.
-
-### H3 — Redundant state (`remaining_balance`) (LOW)
-
-`remaining_balance == deposit_amount - recipient_withdrawn` while a stream is
-live, so it is derivable. Kept for event payloads and readability; document the
-invariant or remove the field.
-
-### H4 — `StreamEnded` and `AmountMismatch` are reserved (LOW)
-
-Unused error codes. Keep them for ABI stability or remove before v1.0.
+- Extending a *foreign* contract's TTL. Soroban forbids it; the owning contract
+  must expose its own extension path.
+- Paying restoration fees. Sentinel reports; it does not subsidise.
+- Vouching for a listed contract. The watchlist is a declaration.
