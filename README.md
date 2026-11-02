@@ -55,7 +55,7 @@ Requires Node.js 22.6+ (the CLI runs TypeScript directly; there is no build
 step).
 
 ```bash
-git clone https://github.com/Streams-Hq/soroban-sentinel.git
+git clone https://github.com/Streams-Hq/stellar-stream-contract.git
 cd soroban-sentinel
 npm install
 
@@ -152,7 +152,7 @@ make wasm        # requires stellar-cli v25.2.0+
 
 ## Documentation
 
-- Site: <https://streams-hq.github.io/soroban-sentinel/>
+- Site: <https://streams-hq.github.io/stellar-stream-contract/>
 - [Architecture](docs/ARCHITECTURE.md) — how TTL, footprints and risk scoring work
 - [Contract spec](docs/CONTRACT_SPEC.md) — registry ABI, errors, events, invariants
 - [Deployment](docs/DEPLOYMENT.md)

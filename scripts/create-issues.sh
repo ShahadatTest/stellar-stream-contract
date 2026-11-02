@@ -10,7 +10,8 @@
 
 set -euo pipefail
 
-REPO="${REPO:-Streams-Hq/soroban-sentinel}"
+# Derive the slug from the checkout so a repo rename never breaks the script.
+REPO="${REPO:-$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null || echo Streams-Hq/stellar-stream-contract)}"
 
 # ---------------------------------------------------------------------------
 # Labels
