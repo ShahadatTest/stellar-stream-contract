@@ -1,0 +1,9 @@
+{
+  "name": "@soroban-sentinel/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TTL forecasts and watchlist access for Soroban contracts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts"
+}

@@ -1,64 +1,64 @@
-# Contributing to StellarStream Contracts
+# Contributing
 
-Thanks for your interest. This repository is part of the StellarStream project
-and takes part in the Stellar Drips Wave program. Issues are labelled so new
-contributors can find work at a comfortable level.
+Thanks for helping keep Soroban contracts alive. This repo is part of the
+[Stellar Drips Wave](https://www.drips.network/wave/stellar) programme: issues
+labelled `Stellar Wave` are funded, and `good first issue` ones are scoped for a
+first contribution.
 
-## Before you start
+## Setup
 
-Read `docs/CONTRACT_SPEC.md`. It defines the intended behavior of every public
-function. If your change alters that behavior, update the spec in the same pull
-request.
+Prerequisites:
 
-## Workflow
-
-1. Open or claim an issue before writing code. Comment on the issue to avoid
-   duplicate work.
-2. Branch from `main`: `git checkout -b feat/withdraw-all` (or `fix/…`,
-   `docs/…`, `test/…`).
-3. Make small, focused commits using Conventional Commits:
-   `type(scope): description`
-   - types: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, `ci`, `style`
-   - scope: `stream` for contract code
-   - example: `fix(stream): require admin auth in init`
-4. Push early and often. Do not batch a week of work into one push.
-5. Open a pull request against `main`. At least one maintainer review and green
-   CI are required before merge. Do not merge your own PR.
-
-## Standards
-
-- Rust edition 2021, `soroban-sdk` 28.x, target `wasm32v1-none`.
-- No floating-point math. All amounts are `i128` in the token's base unit.
-- No `unwrap()` or `expect()` outside of `#[cfg(test)]` code. Return a
-  `StreamError` instead.
-- Use checked arithmetic (`checked_add`, `checked_mul`, …) and map failure to
-  `StreamError::MathOverflow`.
-- Every state change emits an event. Every public function has a doc comment.
-- Storage keys live in `DataKey`. Extend TTL on every persistent read/write.
-- Keep one contract per responsibility. Do not add speculative functions.
-
-Run the full check locally before opening a PR:
+- Rust stable (the pinned toolchain in `rust-toolchain.toml` applies
+  automatically, including the `wasm32v1-none` target)
+- Node.js 22.6+ (the CLI runs TypeScript directly through Node's type stripping;
+  there is no build step)
+- No Stellar CLI required — `scripts/deploy.ts` uses raw Soroban transactions
 
 ```bash
-make fmt
-make clippy
-make test
+git clone https://github.com/Streams-Hq/soroban-sentinel.git
+cd soroban-sentinel
+npm install
+
+make test      # Rust + Node test suites
+make clippy    # lints, warnings are errors
+make fmt       # cargo fmt
+npm run typecheck
+make wasm      # contract artifact
 ```
 
-## Tests
+## Running against testnet
 
-New behavior needs tests. Prefer testing the invariant, not just the happy
-path: e.g. `recipient_balance + sender_balance == deposit` at every timestamp.
-Auth paths must be tested — a call that should be rejected must be shown to be
-rejected.
+```bash
+node packages/cli/src/index.ts doctor
+node packages/cli/src/index.ts scan --contract CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
+```
 
-## Reporting bugs and security issues
+Read-only commands need no key: on testnet a throwaway account is funded via
+friendbot for RPC simulation. Registry writes need `SENTINEL_SECRET`.
 
-Ordinary bugs: open an issue using the bug template.
+## Ground rules
 
-Security issues: follow `SECURITY.md`. Do not open a public issue.
+- One logical change per pull request; keep diffs reviewable.
+- Conventional Commits (`feat:`, `fix:`, `test:`, `docs:`, `ci:`, `refactor:`).
+- Behaviour changes update `docs/ARCHITECTURE.md` and `docs/CLI.md` in the same
+  PR. Contract ABI changes also update `docs/CONTRACT_SPEC.md`.
+- New contract behaviour needs a test. `cargo test` must stay green, and
+  `clippy -D warnings` is enforced in CI.
+- Never commit secrets. `SENTINEL_SECRET` belongs in your environment or an
+  untracked `.env`, never in `deployments.json`.
 
-## License
+## Labels
 
-By contributing you agree that your contributions are licensed under the MIT
-License in `LICENSE`.
+| Label | Meaning |
+| --- | --- |
+| `Stellar Wave` | Part of the funded Wave backlog |
+| `good first issue` | Small, well-scoped, no prior context needed |
+| `complexity: low/mid/high` | Rough effort, not difficulty of the idea |
+| `type: bug/test/docs/ci/feat` | Area of change |
+
+## Reporting bugs
+
+Open an issue with the command you ran, the network, and the output. If the
+output contains a contract id you consider private, redact it. For security
+issues follow `SECURITY.md` instead.

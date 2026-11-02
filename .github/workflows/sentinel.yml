@@ -1,0 +1,36 @@
+name: Sentinel scan
+
+# Daily check of every contract in deployments.json. Fails the run when a watched
+# contract is archived or inside its critical window, which is the reminder to
+# extend or restore it.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Scan
+        run: node packages/cli/src/index.ts scan --config deployments.json --json | tee scan.json
+
+      - name: Verify (fails on critical or archived)
+        run: node packages/cli/src/index.ts verify --config deployments.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sentinel-scan
+          path: scan.json

@@ -1,95 +1,93 @@
 # Deployment
 
-This covers deploying the `stream` contract to Stellar testnet. Mainnet is the
-same sequence with `--network mainnet`, but do not deploy to mainnet while the
-contract is unaudited (see `SECURITY.md`).
+Two things can be deployed: the registry contract and the documentation site.
 
 ## Prerequisites
 
-- Rust toolchain (auto-applied via `rust-toolchain.toml`, target
-  `wasm32v1-none`)
-- Stellar CLI **v25.2.0 or newer** (v28.x recommended). `soroban-sdk` v28
-  refuses a plain `cargo build`, so `stellar contract build` is required. The
-  prebuilt binary from the [stellar-cli releases](https://github.com/stellar/stellar-cli/releases)
-  is faster than `cargo install --locked stellar-cli`.
-- A funded testnet identity
+- Rust stable with the `wasm32v1-none` target (the pinned toolchain in
+  `rust-toolchain.toml` applies automatically)
+- [Stellar CLI](https://github.com/stellar/stellar-cli/releases) **v25.2.0+**
+  (v28.1.0 was used for the current deployment). `soroban-sdk` v28 refuses a
+  bare `cargo build` for wasm, so the CLI is required, not optional.
+- A funded identity, or let the script create one on testnet via friendbot
+
+Install the CLI from the prebuilt release (faster than `cargo install`):
 
 ```bash
-stellar keys generate --global alice --network testnet --fund
-stellar keys address alice
+mkdir -p "$HOME/.local/bin"
+curl -sSL "$(curl -sSL https://api.github.com/repos/stellar/stellar-cli/releases/latest \
+  | grep -o '"browser_download_url": *"[^"]*x86_64-unknown-linux-gnu.tar.gz"' \
+  | head -1 | sed 's/.*"\(https[^"]*\)"/\1/')" | tar -xz -C "$HOME/.local/bin" stellar
 ```
 
-## Build
+## 1. Build
 
 ```bash
-make build
-# → target/wasm32v1-none/release/stellar_stream.wasm
+make wasm
+# → target/wasm32v1-none/release/sentinel_registry.wasm
 ```
 
-## Deploy and initialize
+The build shrinks the contract spec; without the CLI the SDK aborts by design.
 
-The contract has no constructor and no dependencies, so the sequence is short:
-deploy, then `init` once. Run these in order and keep the printed contract ID.
+## 2. Deploy and seed
+
+`scripts/deploy.ts` uploads the wasm, creates the contract with
+`createCustomContract`, and seeds the watchlist. It uses raw Soroban
+transactions, so it does **not** need the Stellar CLI.
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
+# testnet, throwaway key funded by friendbot
+node scripts/deploy.ts
 
-NETWORK=testnet
-SOURCE=alice
-WASM=target/wasm32v1-none/release/stellar_stream.wasm
-
-# 1. Deploy the wasm. The contract ID is printed and is the only output we keep.
-echo "Deploying..."
-CONTRACT_ID=$(stellar contract deploy \
-  --wasm "$WASM" \
-  --source "$SOURCE" \
-  --network "$NETWORK")
-echo "STREAM_CONTRACT_ID=$CONTRACT_ID"
-
-# 2. Initialize with the admin address (the deployer, here).
-ADMIN=$(stellar keys address "$SOURCE")
-echo "Initializing with admin $ADMIN ..."
-stellar contract invoke \
-  --id "$CONTRACT_ID" \
-  --source "$SOURCE" \
-  --network "$NETWORK" \
-  -- init \
-  --admin "$ADMIN"
-
-echo
-echo "================= COPY THESE ================="
-echo "STREAM_CONTRACT_ID=$CONTRACT_ID"
-echo "VITE_STREAM_CONTRACT_ID=$CONTRACT_ID"
-echo "=============================================="
+# or with your own identity
+SENTINEL_SECRET=S... node scripts/deploy.ts
 ```
 
-The final block is the single source of truth for the address. Paste
-`STREAM_CONTRACT_ID` into the application repository's `.env.local`, and into
-the hosting platform's environment variables. Both repositories must refer to
-the same ID for the same network.
+It prints and records:
 
-## Verify
+```
+wasm hash   <sha256 of the wasm>
+registry    C...            ← the contract id
+explorer    https://stellar.expert/explorer/testnet/contract/C...
+```
+
+and writes `deployments.json`, which is both the record and the CLI's default
+config. With `SEED=0` the seeding step is skipped.
+
+> The seeded demo watches are owned by the deploying key. If the script
+> generated a throwaway key, those entries can never be removed — use
+> `SENTINEL_SECRET` for anything you intend to keep.
+
+## 3. Verify
 
 ```bash
-stellar contract invoke --id "$CONTRACT_ID" --source "$SOURCE" --network "$NETWORK" \
-  -- get_stream --stream_id 0
-# Expected: an error (StreamNotFound) before any stream is created.
+node packages/cli/src/index.ts doctor
+node packages/cli/src/index.ts scan --config deployments.json
+node packages/cli/src/index.ts registry list --config deployments.json
 ```
 
-Create a stream on testnet to confirm end to end, then check the events in a
-block explorer (e.g. `https://stellar.expert/explorer/testnet/contract/$CONTRACT_ID`).
+Expected: `doctor` reports `rpc health healthy`; `scan` prints a table with the
+registry itself and the native XLM SAC on testnet.
 
-## Recording the deployment
+## 4. Record the deployment
 
-After a successful deploy:
+1. Add the contract id, wasm hash and date to `deployments.json`.
+2. Update the table in `README.md` and `site/deployments.html`.
+3. Tag the release with the same wasm hash that was uploaded.
 
-1. Add the contract ID to the release notes for the matching version tag.
-2. Add the explorer link to the README's interface section.
-3. Update the application repo's environment variables.
+## Mainnet
+
+Same sequence with `SENTINEL_NETWORK=mainnet`, `SENTINEL_RPC_URL` pointing at an
+endpoint you trust, and `SENTINEL_SECRET` set — there is no friendbot, so the
+throwaway-key path is unavailable.
+
+Do not deploy to mainnet until the contract has been reviewed by someone other
+than its author. The registry is immutable: `watch`/`unwatch` are the only
+mutations, and a bug in id allocation would be permanent.
 
 ## Redeploying
 
-The contract is immutable and `init` can run only once. A behavioral change
-requires a new deployment with a new contract ID; existing streams stay on the
-old contract. Migrating live streams is not supported and is out of scope.
+The contract has no upgrade path. A behavioural change means a new contract id;
+existing watches stay on the old contract and `deployments.json` gains a new
+entry. Clients should treat the registry id as configuration, never as a
+constant.

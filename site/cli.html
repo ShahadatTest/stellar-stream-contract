@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLI — Soroban Sentinel</title>
+<meta name="description" content="sentinel scan, verify, registry and doctor: commands, flags, exit codes and environment variables.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="dot"></span> Soroban Sentinel</a>
+    <nav class="site">
+      <a href="./">Overview</a>
+      <a href="cli.html" aria-current="page">CLI</a>
+      <a href="contract.html">Contract</a>
+      <a href="deployments.html">Deployments</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="https://github.com/Streams-Hq/soroban-sentinel">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>CLI</h1>
+  <p class="lead">TypeScript executed directly by Node 22.6+. No build step, one dependency.</p>
+
+  <h2>Commands</h2>
+  <table>
+    <tr><th>Command</th><th>Purpose</th></tr>
+    <tr><td><code>scan</code></td><td>Forecast archival for targets; human or <code>--json</code> output</td></tr>
+    <tr><td><code>verify</code></td><td>Same data, exit <code>2</code> when something is critical or archived</td></tr>
+    <tr><td><code>registry list</code></td><td>Print the on-chain watchlist</td></tr>
+    <tr><td><code>registry add</code> / <code>remove</code></td><td>Maintain your own entries (needs <code>SENTINEL_SECRET</code>)</td></tr>
+    <tr><td><code>doctor</code></td><td>RPC health, ledger, protocol, network config</td></tr>
+  </table>
+
+  <h2>scan</h2>
+<pre><code>sentinel scan [--contract C...]... [--config path] [--registry C...]
+              [--network testnet|futurenet|mainnet] [--rpc-url url]
+              [--warn-ledgers n] [--json]</code></pre>
+  <p>Targets come from, in order: repeated <code>--contract</code> flags, a config file's <code>contracts[]</code>, or the on-chain watchlist.</p>
+
+  <h2>verify</h2>
+  <table>
+    <tr><th>Exit</th><th>Meaning</th></tr>
+    <tr><td><code>0</code></td><td>Nothing is <code>CRITICAL</code> or <code>ARCHIVED</code></td></tr>
+    <tr><td><code>2</code></td><td>Something is critical or archived (with <code>--strict</code>: also watch/urgent)</td></tr>
+    <tr><td><code>1</code></td><td>The command failed</td></tr>
+  </table>
+<pre><code># .github/workflows/sentinel.yml
+- run: node packages/cli/src/index.ts verify --config deployments.json</code></pre>
+
+  <h2>registry</h2>
+<pre><code>sentinel registry list [--all] [--json]
+sentinel registry add --target CC... --label "Payroll v2" --warn-ledgers 518400
+sentinel registry remove --target CC...</code></pre>
+  <p>Writes are signed with <code>SENTINEL_SECRET</code>; <code>--owner</code> defaults to the signing account.</p>
+
+  <h2>Environment</h2>
+  <table>
+    <tr><th>Variable</th><th>Purpose</th></tr>
+    <tr><td><code>SENTINEL_NETWORK</code></td><td>Default network</td></tr>
+    <tr><td><code>SENTINEL_RPC_URL</code></td><td>Default RPC endpoint</td></tr>
+    <tr><td><code>SENTINEL_REGISTRY_ID</code></td><td>Default registry contract id</td></tr>
+    <tr><td><code>SENTINEL_SECRET</code></td><td>Signing key for registry writes</td></tr>
+    <tr><td><code>SENTINEL_PUBLIC_KEY</code></td><td>Read-only source account (required on mainnet)</td></tr>
+    <tr><td><code>SENTINEL_WARN_LEDGERS</code></td><td>Default warn window</td></tr>
+  </table>
+  <p class="note">On testnet and futurenet, read-only commands with no key generate a throwaway account and fund it via friendbot, purely so RPC simulation has a source account.</p>
+
+  <h2>Config file</h2>
+<pre><code>{
+  "network": "testnet",
+  "registry": "CC4TQFW5GLQTOKWTDE7IJWPQFWJ4NWVMJGBFWB76PUP3T7CEOVVSQW6O",
+  "contracts": [
+    { "contract": "CDLZFC3SYJYD...", "label": "XLM SAC", "warnLedgers": 518400 }
+  ]
+}</code></pre>
+  <p><code>deployments.json</code> is this file, so the CLI works with no flags in a fresh clone.</p>
+
+  <h2>SDK</h2>
+  <p><code>packages/sdk</code> exports the same primitives the CLI uses: <code>projectTtl</code>, <code>classifyRisk</code>, <code>instanceLedgerKey</code>, <code>scanTargets</code>, <code>readWatchlist</code>. Pure functions are dependency-free and tested without a network.</p>
+</main>
+
+<footer class="site">
+  <div class="wrap">MIT licensed · <a href="https://github.com/Streams-Hq/soroban-sentinel">source</a></div>
+</footer>
+</body>
+</html>

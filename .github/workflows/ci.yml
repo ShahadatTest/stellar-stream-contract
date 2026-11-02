@@ -4,73 +4,70 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
-env:
-  CARGO_TERM_COLOR: always
+permissions:
+  contents: read
 
 jobs:
-  check:
-    name: Check, Test & Clippy
+  contracts:
+    name: Contracts (Rust)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32v1-none
           components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
 
-      - name: Cache cargo registry & build
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Cargo check
-        run: cargo check --all-targets
-
-      - name: Cargo test
-        run: cargo test
-
-      - name: Cargo clippy
-        run: cargo clippy --all-targets -- -D warnings
-
-      - name: Cargo fmt check
+      - name: Format
         run: cargo fmt --all -- --check
 
-  wasm:
-    name: Build Release Wasm
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32v1-none
+      - name: Test
+        run: cargo test
 
       - name: Install Stellar CLI
         run: |
-          curl -sSL -o /tmp/stellar-cli.tar.gz \
-            https://github.com/stellar/stellar-cli/releases/download/v28.1.0/stellar-cli-28.1.0-x86_64-unknown-linux-gnu.tar.gz
-          tar xzf /tmp/stellar-cli.tar.gz -C /tmp
-          sudo mv /tmp/stellar /usr/local/bin/stellar
-          stellar --version
+          mkdir -p "$HOME/.local/bin"
+          URL=$(curl -sSL https://api.github.com/repos/stellar/stellar-cli/releases/latest \
+            | grep -o '"browser_download_url": *"[^"]*x86_64-unknown-linux-gnu.tar.gz"' \
+            | head -1 | sed 's/.*"\(https[^"]*\)"/\1/')
+          echo "Installing $URL"
+          curl -sSL "$URL" | tar -xz -C "$HOME/.local/bin" stellar
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          "$HOME/.local/bin/stellar" --version
 
-      - name: Build release wasm
-        # soroban-sdk v28 requires `stellar contract build`, not a raw cargo build.
+      - name: Build wasm
         run: stellar contract build
 
-      - name: Upload wasm artifact
-        uses: actions/upload-artifact@v4
+      - name: Report wasm hash
+        run: |
+          WASM=target/wasm32v1-none/release/sentinel_registry.wasm
+          ls -lh "$WASM"
+          sha256sum "$WASM" | tee wasm.sha256
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: stellar-stream-wasm
-          path: target/wasm32v1-none/release/stellar_stream.wasm
-          if-no-files-found: error
+          name: sentinel_registry.wasm
+          path: |
+            target/wasm32v1-none/release/sentinel_registry.wasm
+            wasm.sha256
+
+  sdk:
+    name: SDK + CLI (Node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test

@@ -1,0 +1,19 @@
+{
+  "network": "testnet",
+  "registry": "CC4TQFW5GLQTOKWTDE7IJWPQFWJ4NWVMJGBFWB76PUP3T7CEOVVSQW6O",
+  "deployer": "GBCVGRLDFAVLQWAWJGOAEXDH25SH3T6MRH5CQFL76AZNF3WRRMSAK26X",
+  "wasmHash": "c1ed6c4473efb0929a711049ebca6e66d4135ed7abb3fcedb753df65fbbe862c",
+  "deployedAt": "2026-11-02T06:13:55.513Z",
+  "contracts": [
+    {
+      "contract": "CC4TQFW5GLQTOKWTDE7IJWPQFWJ4NWVMJGBFWB76PUP3T7CEOVVSQW6O",
+      "label": "Sentinel registry (self)",
+      "warnLedgers": 518400
+    },
+    {
+      "contract": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+      "label": "Native XLM Stellar Asset Contract",
+      "warnLedgers": 518400
+    }
+  ]
+}

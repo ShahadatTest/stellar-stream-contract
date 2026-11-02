@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registry contract — Soroban Sentinel</title>
+<meta name="description" content="sentinel-registry: a permissionless, fundless watchlist contract for Soroban contracts.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="dot"></span> Soroban Sentinel</a>
+    <nav class="site">
+      <a href="./">Overview</a>
+      <a href="cli.html">CLI</a>
+      <a href="contract.html" aria-current="page">Contract</a>
+      <a href="deployments.html">Deployments</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="https://github.com/Streams-Hq/soroban-sentinel">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Registry contract</h1>
+  <p class="lead"><code>sentinel-registry</code> · soroban-sdk 28 · wasm32v1-none · 7.2 KiB</p>
+
+  <h2>Interface</h2>
+  <table>
+    <tr><th>Function</th><th>Auth</th><th>Purpose</th></tr>
+    <tr><td><code>watch(owner, target, label, warn_ledgers)</code></td><td>owner</td><td>Add a contract to the watchlist; returns the new id</td></tr>
+    <tr><td><code>unwatch(owner, target)</code></td><td>owner</td><td>Deactivate a watch; the id is never reused</td></tr>
+    <tr><td><code>get(target)</code></td><td>none</td><td>Full record, including inactive ones</td></tr>
+    <tr><td><code>is_watched(target)</code></td><td>none</td><td>True only for an active watch</td></tr>
+    <tr><td><code>list(cursor, limit)</code></td><td>none</td><td>Page active watches by id, max 50</td></tr>
+    <tr><td><code>count()</code> / <code>active_count()</code></td><td>none</td><td>Total ever created / currently active</td></tr>
+  </table>
+
+  <h2>Record</h2>
+<pre><code>pub struct Watch {
+    id: u64,             // monotonic, never reused
+    target: Address,     // the watched contract
+    owner: Address,      // only address allowed to remove it
+    label: String,       // display name
+    warn_ledgers: u32,   // warn window, 1 day .. 1 year
+    added_ledger: u32,
+    active: bool,
+}</code></pre>
+
+  <h2>Errors</h2>
+  <table>
+    <tr><th>Code</th><th>Variant</th></tr>
+    <tr><td>1</td><td><code>Unauthorized</code></td></tr>
+    <tr><td>2</td><td><code>AlreadyWatched</code></td></tr>
+    <tr><td>3</td><td><code>NotFound</code></td></tr>
+    <tr><td>4</td><td><code>NotWatched</code></td></tr>
+    <tr><td>5</td><td><code>InvalidWarnWindow</code></td></tr>
+    <tr><td>6</td><td><code>MathOverflow</code></td></tr>
+  </table>
+
+  <h2>Events</h2>
+  <p><code>WatchAdded { id, target, owner, warn_ledgers }</code> and <code>WatchRemoved { target, owner }</code>. The full watchlist is reconstructible from these two events, which is the intended path for an indexer.</p>
+
+  <h2>Self-preservation</h2>
+  <p>
+    Every read and write extends the registry's own instance and persistent TTLs
+    (threshold 1 day, extension 30 days, clamped by the network). The watchdog
+    must not be the first thing to expire — and <code>deployments.json</code>
+    includes the registry itself, so its own deadline appears in every scan.
+  </p>
+
+  <h2>What it cannot do</h2>
+  <ul>
+    <li>Extend another contract's TTL. Soroban only allows the owning contract to do that.</li>
+    <li>Move or hold funds. It never calls a token.</li>
+    <li>Be upgraded. There is no admin and no upgrade entry point.</li>
+    <li>Vouch for a contract. Listing is a declaration, not an audit.</li>
+  </ul>
+
+  <p><a href="https://github.com/Streams-Hq/soroban-sentinel/blob/main/docs/CONTRACT_SPEC.md">Full specification →</a></p>
+</main>
+
+<footer class="site">
+  <div class="wrap">MIT licensed · <a href="https://github.com/Streams-Hq/soroban-sentinel">source</a></div>
+</footer>
+</body>
+</html>
