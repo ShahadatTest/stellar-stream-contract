@@ -27,9 +27,9 @@ check:
 	cargo check --all-targets
 
 # Upload the wasm and create the registry on testnet. Writes
-# deployments.testnet.json; see scripts/deploy.mjs.
+# deployments.testnet.json; see scripts/deploy.ts.
 deploy-testnet: wasm
-	node scripts/deploy.mjs
+	node scripts/deploy.ts
 
 # Scan the contracts listed in deployments.json against the network RPC.
 scan:
