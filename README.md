@@ -1,5 +1,11 @@
 # Soroban Sentinel
 
+[![CI](https://github.com/Streams-Hq/soroban-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/Streams-Hq/soroban-sentinel/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-streams--hq.github.io%2Fsoroban--sentinel-8b5cf6)](https://streams-hq.github.io/soroban-sentinel/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Stellar](https://img.shields.io/badge/network-stellar%20testnet-7B3FE4)](https://stellar.expert/explorer/testnet/contract/CC4TQFW5GLQTOKWTDE7IJWPQFWJ4NWVMJGBFWB76PUP3T7CEOVVSQW6O)
+[![Node](https://img.shields.io/badge/node-%E2%89%A522.6-339933)](package.json)
+
 **Watch Soroban contracts before their state expires.**
 
 Every Soroban storage entry has a time-to-live. When it runs out the entry is
@@ -55,7 +61,7 @@ Requires Node.js 22.6+ (the CLI runs TypeScript directly; there is no build
 step).
 
 ```bash
-git clone https://github.com/Streams-Hq/stellar-stream-contract.git
+git clone https://github.com/Streams-Hq/soroban-sentinel.git
 cd soroban-sentinel
 npm install
 
@@ -138,6 +144,7 @@ soroban-sentinel/
 ├── packages/cli/           # `sentinel` command
 ├── scripts/deploy.ts       # Upload + create + seed, no Stellar CLI needed
 ├── site/                   # Documentation site (GitHub Pages)
+├── prompts/                # System prompts for coding agents building on this repo
 └── docs/                   # Architecture, CLI, contract spec, deployment, roadmap
 ```
 
@@ -152,17 +159,39 @@ make wasm        # requires stellar-cli v25.2.0+
 
 ## Documentation
 
-- Site: <https://streams-hq.github.io/stellar-stream-contract/>
+- Site: <https://streams-hq.github.io/soroban-sentinel/>
 - [Architecture](docs/ARCHITECTURE.md) — how TTL, footprints and risk scoring work
 - [Contract spec](docs/CONTRACT_SPEC.md) — registry ABI, errors, events, invariants
+- [CLI reference](docs/CLI.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Wave submission pack](docs/SUBMISSION.md)
+
+## Maintainers
+
+| Maintainer | Area | Contact |
+| --- | --- | --- |
+| TechSis ([@Deyanju23](https://github.com/Deyanju23)) | Contract, keeper CLI, releases | GitHub issue or `@Deyanju23` |
+
+Security reports go through [`SECURITY.md`](SECURITY.md), not a public issue.
+
+## Community
+
+- [Stellar Drips Wave](https://www.drips.network/wave/stellar) — the funding
+  programme this repo participates in
+- [Stellar developer Discord](https://discord.gg/stellardev) —
+  `#soroban` and `#dev-discussion` for protocol questions
+- [Soroban docs](https://developers.stellar.org/docs/build/smart-contracts/overview)
 
 ## Contributing
 
 Issues labelled `Stellar Wave` are funded through
 [Drips Wave](https://www.drips.network/wave/stellar). Start with
 [`CONTRIBUTING.md`](CONTRIBUTING.md); `good first issue` is the entry point.
+
+<a href="https://github.com/Streams-Hq/soroban-sentinel/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Streams-Hq/soroban-sentinel" alt="Contributors" />
+</a>
 
 ## Security
 
