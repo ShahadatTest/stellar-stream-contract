@@ -1,7 +1,7 @@
-# Wave submission pack
+# Submission pack
 
-Everything the Drips Wave submission form asks for, written out so it can be
-copied without editing. Links are the deployed values in `deployments.json`.
+Everything a submission form asks for, written out so it can be copied without
+editing. Links are the deployed values in `deployments.json`.
 
 ## Project description (one paragraph)
 
@@ -26,13 +26,14 @@ without its authors' cooperation.
 | Contract (testnet) | [`CC4TQFW5GLQTOKWTDE7IJWPQFWJ4NWVMJGBFWB76PUP3T7CEOVVSQW6O`](https://stellar.expert/explorer/testnet/contract/CC4TQFW5GLQTOKWTDE7IJWPQFWJ4NWVMJGBFWB76PUP3T7CEOVVSQW6O) |
 | Contract spec | <https://github.com/Streams-Hq/soroban-sentinel/blob/main/docs/CONTRACT_SPEC.md> |
 | Issue backlog generator | <https://github.com/Streams-Hq/soroban-sentinel/blob/main/scripts/create-issues.sh> |
+| Release | [v0.1.0](https://github.com/Streams-Hq/soroban-sentinel/releases/tag/v0.1.0) |
 | Demo video | **not recorded yet** — see "Before submitting" below |
 
 ## Repo relationship
 
 This is a single repository, not a contract/app split. The contract is ~150
 lines of Rust that stores one struct and two counters; the application layer is
-a Node keeper. Two repos would buy a second Wave surface at the cost of a
+a Node keeper. Two repos would buy a second reviewable surface at the cost of a
 versioned ABI between them, and the CLI already treats the registry id as
 configuration (`deployments.json`, `SENTINEL_REGISTRY_ID`), so a redeploy never
 requires a code change. If the ABI grows past a watchlist, the split becomes
@@ -65,12 +66,12 @@ deliberately waived.
 1. **Record the demo.** A terminal capture of `scan` on testnet, a
    `registry add`, and `verify` exiting `2` on an expired contract. Two minutes,
    no editing beyond trimming.
-2. **Publish the v0.1.0 release.** The tag exists locally; the GitHub release
-   does not. It must carry the wasm hash
-   `c1ed6c4473efb0929a711049ebca6e66d4135ed7abb3fcedb753df65fbbe862c` and the
-   testnet contract id.
-3. **Confirm branch protection.** `scripts/setup-repo.sh` applies it; the
-   required checks must be the real job names (`Contracts (Rust)`,
-   `SDK + CLI (Node)`) or merges will hang.
-4. **Confirm the docs site URL** after the Pages rebuild, and that the repository
-   URL in this file and in the README resolves.
+2. **Apply branch protection and topics.** `scripts/setup-repo.sh` does both,
+   but the automation token used to publish this tree is a GitHub App token and
+   the API refuses it: `403 Resource not accessible by integration` on
+   `branches/main/protection` and on the `topics` endpoint. Run the script once
+   with a personal token that has admin on the repo. Required checks are read
+   from the CI workflow (`Contracts (Rust)`, `SDK + CLI (Node)`), so they cannot
+   drift from the job names.
+3. **Confirm the docs site URL** after the Pages rebuild, and that the
+   repository URL in this file and in the README resolves.
