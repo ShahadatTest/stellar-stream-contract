@@ -75,6 +75,34 @@ registry itself and the native XLM SAC on testnet.
 2. Update the table in `README.md` and `site/deployments.html`.
 3. Tag the release with the same wasm hash that was uploaded.
 
+## Docs site
+
+The static site in `site/` is published by `.github/workflows/pages.yml`. GitHub
+Pages has to be enabled once for the repository, and a token without admin on the
+repo cannot do it — the workflow's `enablement: true` then fails with
+`Create Pages site failed: Resource not accessible by integration`, and every
+URL under `streams-hq.github.io/soroban-sentinel/` returns 404.
+
+Enable it once, either way:
+
+```bash
+# with a token that has admin on the repo
+gh api --method POST repos/Streams-Hq/soroban-sentinel/pages -f build_type=workflow
+```
+
+or in the browser: **Settings → Pages → Build and deployment → Source: GitHub
+Actions**.
+
+Then re-run the deploy:
+
+```bash
+gh workflow run pages.yml
+gh run watch
+```
+
+Verify `https://streams-hq.github.io/soroban-sentinel/` and one subpage such as
+`/developers.html` return 200. The workflow redeploys on any push to `site/`.
+
 ## Mainnet
 
 Same sequence with `SENTINEL_NETWORK=mainnet`, `SENTINEL_RPC_URL` pointing at an
