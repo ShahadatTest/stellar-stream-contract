@@ -1,8 +1,8 @@
 # What changed since the rejected submission
 
-This file explains, for a Drips Wave reviewer, what the project was when it was
-rejected, what it is now, and why the difference is structural rather than
-cosmetic. Every claim below is checkable against this repository's history.
+This file explains, for a reviewer, what the project was when it was rejected,
+what it is now, and why the difference is structural rather than cosmetic. Every
+claim below is checkable against this repository's history.
 
 ## Short version
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Seed the Drips Wave issue backlog for soroban-sentinel.
+# Seed the public issue backlog for soroban-sentinel.
 #
 # Run once from the repository root with an authenticated gh CLI:
 #   bash scripts/create-issues.sh
@@ -22,7 +22,6 @@ label() {
   gh label create "$1" --repo "$REPO" --color "$2" --description "$3" --force >/dev/null
 }
 
-label "Stellar Wave"     "7B3FE4" "Part of the Stellar Drips Wave program"
 label "good first issue" "7057FF" "Scoped, low-risk, good starting point"
 label "complexity: low"  "C2E0C6" "Roughly a day of work"
 label "complexity: mid"  "FEF2C0" "A few days of work"
@@ -62,7 +61,7 @@ create_issue() {
 
 create_issue \
   "feat(cli): add 'sentinel restore' for archived entries" \
-  "Stellar Wave,type: feat,complexity: high" \
+  "type: feat,complexity: high" \
   "$(cat <<'EOF'
 ## Summary
 
@@ -93,7 +92,7 @@ EOF
 
 create_issue \
   "feat(sdk): stop reporting URGENT when the contract is at maxEntryTtl" \
-  "Stellar Wave,type: bug,complexity: mid" \
+  "type: bug,complexity: mid" \
   "$(cat <<'EOF'
 ## Summary
 
@@ -123,7 +122,7 @@ EOF
 
 create_issue \
   "feat(cli): cross-check TTLs across two RPC endpoints" \
-  "Stellar Wave,type: feat,complexity: mid" \
+  "type: feat,complexity: mid" \
   "$(cat <<'EOF'
 ## Summary
 
@@ -152,7 +151,7 @@ EOF
 
 create_issue \
   "feat(registry): allow transferring watch ownership" \
-  "Stellar Wave,type: feat,complexity: mid" \
+  "type: feat,complexity: mid" \
   "$(cat <<'EOF'
 ## Summary
 
@@ -180,7 +179,7 @@ EOF
 
 create_issue \
   "test(registry): assert emitted event payloads" \
-  "Stellar Wave,type: test,complexity: low,good first issue" \
+  "type: test,complexity: low,good first issue" \
   "$(cat <<'EOF'
 ## Summary
 
@@ -206,7 +205,7 @@ EOF
 
 create_issue \
   "test(cli): snapshot the human and JSON report formats" \
-  "Stellar Wave,type: test,complexity: low,good first issue" \
+  "type: test,complexity: low,good first issue" \
   "$(cat <<'EOF'
 ## Summary
 
@@ -232,7 +231,7 @@ EOF
 
 create_issue \
   "feat: enumerate a contract's persistent keys with a footprint indexer" \
-  "Stellar Wave,type: feat,complexity: high" \
+  "type: feat,complexity: high" \
   "$(cat <<'EOF'
 ## Summary
 
@@ -261,7 +260,7 @@ EOF
 
 create_issue \
   "docs: write an archival runbook" \
-  "Stellar Wave,type: docs,complexity: low,good first issue" \
+  "type: docs,complexity: low,good first issue" \
   "$(cat <<'EOF'
 ## Summary
 
@@ -288,7 +287,7 @@ EOF
 
 create_issue \
   "ci: publish the wasm artifact and hash on tagged releases" \
-  "Stellar Wave,type: ci,complexity: low,good first issue" \
+  "type: ci,complexity: low,good first issue" \
   "$(cat <<'EOF'
 ## Summary
 
@@ -313,7 +312,7 @@ EOF
 
 create_issue \
   "feat(cli): static status dashboard generated from scan output" \
-  "Stellar Wave,type: feat,complexity: mid" \
+  "type: feat,complexity: mid" \
   "$(cat <<'EOF'
 ## Summary
 

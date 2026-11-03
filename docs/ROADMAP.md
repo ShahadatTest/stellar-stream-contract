@@ -2,7 +2,7 @@
 
 Versioned by capability, not by date. `v0.1` is deployed and useful; everything
 below is sequenced by what unlocks the most value per unit of work, and each
-item maps to a Wave issue.
+item maps to a tracked issue.
 
 ## v0.1 — shipped
 

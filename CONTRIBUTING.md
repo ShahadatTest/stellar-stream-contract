@@ -1,9 +1,8 @@
 # Contributing
 
-Thanks for helping keep Soroban contracts alive. This repo is part of the
-[Stellar Drips Wave](https://www.drips.network/wave/stellar) programme: issues
-labelled `Stellar Wave` are funded, and `good first issue` ones are scoped for a
-first contribution.
+Thanks for helping keep Soroban contracts alive. Issues labelled `good first
+issue` are scoped for a first contribution; everything else is fair game once you
+have read `docs/ARCHITECTURE.md`.
 
 ## Setup
 
@@ -52,7 +51,6 @@ friendbot for RPC simulation. Registry writes need `SENTINEL_SECRET`.
 
 | Label | Meaning |
 | --- | --- |
-| `Stellar Wave` | Part of the funded Wave backlog |
 | `good first issue` | Small, well-scoped, no prior context needed |
 | `complexity: low/mid/high` | Rough effort, not difficulty of the idea |
 | `type: bug/test/docs/ci/feat` | Area of change |

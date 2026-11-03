@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Apply the repository settings a Wave reviewer looks at: topics, branch
+# Apply the repository settings a reviewer looks at: topics, branch
 # protection on main, and the v0.1.0 release carrying the deployed wasm hash.
 #
 # Run from the repository root with an authenticated gh CLI that has admin on
@@ -108,4 +108,4 @@ fi
 # Labels and issues are handled separately by scripts/create-issues.sh.
 # ---------------------------------------------------------------------------
 echo
-echo "next   : bash scripts/create-issues.sh   (files the Wave backlog)"
+echo "next   : bash scripts/create-issues.sh   (files the issue backlog)"

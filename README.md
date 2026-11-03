@@ -165,7 +165,7 @@ make wasm        # requires stellar-cli v25.2.0+
 - [CLI reference](docs/CLI.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Roadmap](docs/ROADMAP.md)
-- [Wave submission pack](docs/SUBMISSION.md)
+- [Submission pack](docs/SUBMISSION.md)
 
 ## Maintainers
 
@@ -177,17 +177,15 @@ Security reports go through [`SECURITY.md`](SECURITY.md), not a public issue.
 
 ## Community
 
-- [Stellar Drips Wave](https://www.drips.network/wave/stellar) — the funding
-  programme this repo participates in
 - [Stellar developer Discord](https://discord.gg/stellardev) —
   `#soroban` and `#dev-discussion` for protocol questions
 - [Soroban docs](https://developers.stellar.org/docs/build/smart-contracts/overview)
 
 ## Contributing
 
-Issues labelled `Stellar Wave` are funded through
-[Drips Wave](https://www.drips.network/wave/stellar). Start with
-[`CONTRIBUTING.md`](CONTRIBUTING.md); `good first issue` is the entry point.
+Start with [`CONTRIBUTING.md`](CONTRIBUTING.md). `good first issue` marks work
+scoped for a first contribution; the rest of the backlog is listed in
+[`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 <a href="https://github.com/Streams-Hq/soroban-sentinel/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=Streams-Hq/soroban-sentinel" alt="Contributors" />
