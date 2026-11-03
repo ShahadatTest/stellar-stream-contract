@@ -16,7 +16,7 @@ Prerequisites:
 - No Stellar CLI required — `scripts/deploy.ts` uses raw Soroban transactions
 
 ```bash
-git clone https://github.com/Streams-Hq/stellar-stream-contract.git
+git clone https://github.com/Streams-Hq/soroban-sentinel.git
 cd soroban-sentinel
 npm install
 

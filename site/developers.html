@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Developers — Soroban Sentinel</title>
+<meta name="description" content="SDK reference, local setup and RPC patterns for the sentinel keeper tooling.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./"><span class="dot"></span> Soroban Sentinel</a>
+    <nav class="site">
+      <a href="./">Overview</a>
+      <a href="cli.html">CLI</a>
+      <a href="developers.html" aria-current="page">Developers</a>
+      <a href="contract.html">Contract</a>
+      <a href="deployments.html">Deployments</a>
+      <a href="roadmap.html">Roadmap</a>
+      <a href="https://github.com/Streams-Hq/soroban-sentinel">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>Developers</h1>
+  <p class="lead">
+    The SDK is plain TypeScript with one dependency. Node runs it directly — no
+    build step, no bundler, no generated client.
+  </p>
+
+  <h2>Local setup</h2>
+<pre><code>git clone https://github.com/Streams-Hq/soroban-sentinel.git
+cd soroban-sentinel
+npm install
+
+npm test          # node --test on the pure modules
+npm run typecheck # tsc --noEmit
+make test         # + cargo test for the contract (needs Rust)</code></pre>
+  <p>
+    Rust is only needed to build the contract. Everything under
+    <code>packages/</code> runs with Node 22.6+ alone.
+  </p>
+
+  <h2>Module map</h2>
+  <table>
+    <tr><th>Module</th><th>Exports</th></tr>
+    <tr><td><code>network.ts</code></td><td><code>NETWORKS</code>, <code>resolveNetwork</code>, <code>explorerContractUrl</code>, <code>LEDGERS_PER_DAY</code>, <code>CLOSE_TIME_SECONDS</code></td></tr>
+    <tr><td><code>ttl.ts</code></td><td><code>projectTtl</code>, <code>classifyRisk</code>, <code>formatDuration</code>, <code>daysToLedgers</code></td></tr>
+    <tr><td><code>footprint.ts</code></td><td><code>instanceLedgerKey</code>, <code>dataLedgerKey</code>, <code>wasmHashOf</code>, <code>ledgerKeyToBase64</code></td></tr>
+    <tr><td><code>rpc.ts</code></td><td><code>openServer</code>, <code>resolveSource</code>, <code>invokeContract</code></td></tr>
+    <tr><td><code>scan.ts</code></td><td><code>scanTargets</code>, <code>worstRisk</code>, <code>exitCodeFor</code></td></tr>
+    <tr><td><code>registry.ts</code></td><td><code>readWatchlist</code>, <code>readWatchCount</code>, <code>addWatch</code>, <code>removeWatch</code></td></tr>
+    <tr><td><code>report.ts</code></td><td><code>renderText</code>, <code>renderJson</code></td></tr>
+  </table>
+
+  <h2>Scan from code</h2>
+<pre><code>import { openServer, resolveNetwork, scanTargets, renderJson } from "./packages/sdk/src/index.ts";
+
+const cfg = resolveNetwork("testnet");
+const server = openServer(cfg);
+
+const result = await scanTargets(server, cfg, [
+  {
+    contractId: "CC4TQFW5GLQTOKWTDE7IJWPQFWJ4NWVMJGBFWB76PUP3T7CEOVVSQW6O",
+    label: "Sentinel registry",
+    warnLedgers: 518_400,
+  },
+]);
+
+console.log(renderJson(result));
+// result.summary -> { healthy, watch, urgent, critical, missing }</code></pre>
+  <p>
+    <code>scanTargets</code> batches keys 50 at a time through
+    <code>getLedgerEntries</code>. Pass <code>{ now }</code> in the options to
+    make the forecast deterministic in a test.
+  </p>
+
+  <h2>Forecast without a network</h2>
+<pre><code>import { projectTtl, classifyRisk, formatDuration } from "./packages/sdk/src/ttl.ts";
+
+const projection = projectTtl({
+  liveUntilLedger: 5_636_236,
+  currentLedger: 5_515_284,
+  warnLedgers: 518_400,
+  now: Date.parse("2026-11-02T06:20:00Z"),
+});
+
+projection.risk            // "urgent"
+projection.ledgersRemaining // 120952
+formatDuration(projection.secondsRemaining) // "6d 23h"</code></pre>
+
+  <h2>Deriving the instance key</h2>
+  <p>
+    The reason a scan needs no cooperation from the contract's authors: the
+    instance entry's ledger key depends only on the contract id.
+  </p>
+<pre><code>import { instanceLedgerKey, ledgerKeyToBase64 } from "./packages/sdk/src/footprint.ts";
+
+const key = instanceLedgerKey("CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC");
+const entries = await server.getLedgerEntries(key);
+entries.entries[0]?.liveUntilLedgerSeq; // ledger number, not a timestamp</code></pre>
+
+  <h2>Add a watch from code</h2>
+<pre><code>import { Keypair } from "@stellar/stellar-sdk";
+import { addWatch } from "./packages/sdk/src/registry.ts";
+
+const keypair = Keypair.fromSecret(process.env.SENTINEL_SECRET!);
+await addWatch(server, cfg, {
+  registryId: "CC4TQFW5GLQT...",
+  owner: keypair.publicKey(),
+  target: "CDLZFC3SYJYD...",
+  label: "Payroll streams v2",
+  warnLedgers: 518_400,
+  keypair,
+});</code></pre>
+  <p class="note">
+    <code>SENTINEL_SECRET</code> is read from the environment and never written
+    anywhere. Pass <code>--secret</code> only for a throwaway key.
+  </p>
+
+  <h2>Environment</h2>
+  <table>
+    <tr><th>Variable</th><th>Required</th><th>Purpose</th></tr>
+    <tr><td><code>SENTINEL_NETWORK</code></td><td>no</td><td><code>testnet</code> (default), <code>futurenet</code>, <code>mainnet</code></td></tr>
+    <tr><td><code>SENTINEL_RPC_URL</code></td><td>no</td><td>Override the preset RPC endpoint</td></tr>
+    <tr><td><code>SENTINEL_REGISTRY_ID</code></td><td>no</td><td>Default registry, normally taken from <code>deployments.json</code></td></tr>
+    <tr><td><code>SENTINEL_SECRET</code></td><td>writes</td><td>Signing key for <code>registry add</code>/<code>remove</code></td></tr>
+    <tr><td><code>SENTINEL_PUBLIC_KEY</code></td><td>mainnet reads</td><td>Source account for simulation; there is no friendbot on mainnet</td></tr>
+    <tr><td><code>SENTINEL_WARN_LEDGERS</code></td><td>no</td><td>Default warn window in ledgers</td></tr>
+  </table>
+
+  <h2>Data shape</h2>
+  <p>
+    <code>scan --json</code> emits a <code>ScanResult</code>: network, rpcUrl,
+    latestLedger, scannedAt, <code>contracts[]</code> (each with risk, ledger and
+    second counts, ISO expiry, per-entry readings and an explorer URL) and a
+    <code>summary</code> keyed by risk. The full example lives in the
+    <a href="https://github.com/Streams-Hq/soroban-sentinel/blob/main/docs/CLI.md">CLI reference</a>.
+  </p>
+
+  <h2>Testing your change</h2>
+<pre><code>npm test                                  # all SDK tests
+node --test packages/sdk/test/ttl.test.ts # one file
+npm run typecheck                         # whole repo</code></pre>
+  <p>
+    Tests never touch the network: the RPC layer is thin and everything worth
+    asserting is pure. If a test needs a ledger number, pass it in.
+  </p>
+
+  <div class="cta">
+    <a class="primary" href="https://github.com/Streams-Hq/soroban-sentinel/blob/main/CONTRIBUTING.md">Contributing guide</a>
+    <a href="https://github.com/Streams-Hq/soroban-sentinel/issues">Open issues</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">MIT licensed · <a href="https://github.com/Streams-Hq/soroban-sentinel">source</a></div>
+</footer>
+</body>
+</html>
